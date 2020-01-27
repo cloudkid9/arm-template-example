@@ -1,0 +1,106 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "location": {
+        "type": "string",
+        "defaultValue": "[resourceGroup().location]",
+        "metadata": {
+          "description": "Location for all resources."
+        }
+      },
+      "vnetParameters": {
+          "type": "object"
+      } 
+    },
+    "variables": {
+    },
+    "resources": [
+      {
+        "type": "Microsoft.Network/virtualNetworks",
+        "apiVersion": "2018-11-01",
+        "name": "[parameters('vnetParameters').secondVnet.virtualNetworkName]",
+        "location": "[parameters('location')]",
+        "dependsOn": [
+        ],
+        "properties": {
+          "addressSpace": {
+            "addressPrefixes": [
+              "[parameters('vnetParameters').secondVnet.addressPrefix]"
+            ]
+          },
+          "subnets": [
+            {
+              "name": "[parameters('vnetParameters').secondVnet.subnets[0].name]",
+              "properties": {
+                "addressPrefix": "[parameters('vnetParameters').secondVnet.subnets[0].addressPrefix]"
+              }
+            },
+            {
+                "name": "[parameters('vnetParameters').secondVnet.subnets[1].name]",
+                "properties": {
+                  "addressPrefix": "[parameters('vnetParameters').secondVnet.subnets[1].addressPrefix]"
+                }
+              }
+          ]
+        },
+        "resources": [
+            {
+                "apiVersion": "2018-11-01",
+                "type": "virtualNetworkPeerings",
+                "name": "[concat(parameters('vnetParameters').secondVnet.virtualNetworkName, '-to-', parameters('vnetParameters').firstVnet.virtualNetworkName)]",
+                "location": "[resourceGroup().location]",
+                "dependsOn": [
+                    "[concat('Microsoft.Network/virtualNetworks/', parameters('vnetParameters').secondVnet.virtualNetworkName)]"
+                ],
+                "comments": "This is the peering from Vnet 2 to Vnet 1",
+                "properties": {
+                    "allowVirtualNetworkAccess": true,
+                    "allowForwardedTraffic": true,
+                    "allowGatewayTransit": false,
+                    "useRemoteGateways": false,
+                    "remoteVirtualNetwork": {
+                        "id": "[resourceId('vnet-1-rg', 'Microsoft.Network/virtualNetworks', parameters('vnetParameters').firstVnet.virtualNetworkName)]"
+                    }
+                }
+            }
+         ]
+      },
+      {
+        "name": "[concat(parameters('vnetParameters').firstVnet.virtualNetworkName, '-to-', parameters('vnetParameters').secondVnet.virtualNetworkName)]",
+        "type": "Microsoft.Resources/deployments",
+        "apiVersion": "2017-05-10",
+        "resourceGroup": "vnet-1-rg",
+        "dependsOn": [
+          "[parameters('vnetParameters').secondVnet.virtualNetworkName]"
+        ],
+        "properties": {
+            "mode": "Incremental",
+            "template": {
+                "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "resources": [
+                    {
+                        "apiVersion": "2017-10-01",
+                        "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+                        "name": "[concat(parameters('vnetParameters').firstVnet.virtualNetworkName, '/to-', parameters('vnetParameters').secondVnet.virtualNetworkName)]",
+                        "location": "[resourceGroup().location]",
+                        "properties": {
+                            "allowVirtualNetworkAccess": true,
+                            "allowForwardedTraffic": false,
+                            "allowGatewayTransit": true,
+                            "useRemoteGateways": false,
+                            "remoteVirtualNetwork": {
+                                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/virtualNetworks', parameters('vnetParameters').secondVnet.virtualNetworkName)]"
+                            }
+                        }
+                    }
+                ]
+        }
+    }
+        
+    }
+    ],
+    "outputs": {
+    }
+  }

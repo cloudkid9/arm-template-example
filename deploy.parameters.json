@@ -1,0 +1,51 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "vnetParameters": {
+            "value": {
+                "firstVnet": {
+                    "virtualNetworkName": "vnet-1",
+                    "addressPrefix": "10.0.0.0/20",
+                    "subnets": [
+                        {
+                            "name": "vnet-1-public",
+                            "addressPrefix": "10.0.0.0/24"
+                        },
+                        {
+                            "name": "vnet-1-private",
+                            "addressPrefix": "10.0.1.0/24"
+                        }
+                    ]
+                },
+                "secondVnet": {
+                    "virtualNetworkName": "vnet-2",
+                    "addressPrefix": "10.0.16.0/20",
+                    "subnets": [
+                        {
+                            "name": "vnet-2-public",
+                            "addressPrefix": "10.0.16.0/24"
+                        },
+                        {
+                            "name": "vnet-2-private",
+                            "addressPrefix": "10.0.17.0/24"
+                        }
+                    ]
+                }
+            }
+        },
+        "templateStorageAccount": {
+            "value": "testvnetlabssa"
+        },
+        "rGroups": {
+            "value": {
+                "firstRg": {
+                    "name": "vnet-1-rg"
+                },
+                "secondRg": {
+                    "name": "vnet-2-rg"
+                }
+            }
+        }
+    }
+}

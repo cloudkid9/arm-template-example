@@ -1,0 +1,100 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "type": "string",
+            "defaultValue": "Australia East"
+        },
+        "sasToken": {
+          "type": "securestring"
+        },
+        "templateStorageAccount": {
+            "type": "string"
+        },
+        "templatesContainer": {
+            "type": "string",
+            "defaultValue": "templates"
+        },
+        "rGroups": {
+            "type": "object",
+            "metadata": {
+                "description": "defined in the parameter file - deploy.parameters.json"
+            }, 
+            "defaultValue": {
+                "firstRg": {
+                    "name": "vnet-1-rg"
+                },
+                "secondRg": {
+                    "name": "vnet-2-rg"
+                }
+            }
+        },
+        "vnetParameters": {
+            "type": "object",
+            "metadata": {
+                "description": "defined in the parameter file - deploy.parameters.json"
+            }
+        }
+    },
+    "variables": {
+        "baseURL": "[concat('https://', parameters('templateStorageAccount'), '.blob.core.windows.net/', parameters('templatesContainer'), '/')]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2018-05-01",
+            "name": "[parameters('rGroups').firstRg.name]",
+            "location": "[parameters('location')]",
+            "properties": {}
+        },
+        {
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2018-05-01",
+            "name": "[parameters('rGroups').secondRg.name]",
+            "location": "[parameters('location')]",
+            "properties": {}
+        },
+      {
+        "type": "Microsoft.Resources/deployments",
+        "apiVersion": "2017-05-10",
+        "name": "[concat('deployment', parameters('vnetParameters').firstVnet.virtualNetworkName)]",
+        "resourceGroup": "[parameters('rGroups').firstRg.name]",
+        "dependsOn": [
+            "[resourceId('Microsoft.Resources/resourceGroups/', parameters('rGroups').firstRg.name)]"
+          ],
+        "properties": {
+          "mode": "Incremental",
+          "templateLink": {
+            "uri":"[concat(variables('baseURL'), 'vnet1.json', '?', parameters('sasToken'))]",
+            "contentVersion":"1.0.0.0"
+          },
+          "parameters": {
+            "vnetParameters":{"value": "[parameters('vnetParameters')]"}
+          }
+        }
+      },
+      {
+        "type": "Microsoft.Resources/deployments",
+        "apiVersion": "2017-05-10",
+        "name": "[concat('deployment', parameters('vnetParameters').secondVnet.virtualNetworkName)]",
+        "resourceGroup": "[parameters('rGroups').secondRg.name]",
+        "dependsOn": [
+            "[resourceId('Microsoft.Resources/resourceGroups/', parameters('rGroups').secondRg.name)]",
+            "[concat('deployment', parameters('vnetParameters').firstVnet.virtualNetworkName)]"
+          ],
+        "properties": {
+          "mode": "Incremental",
+          "templateLink": {
+            "uri":"[concat(variables('baseURL'), 'vnet2.json', '?', parameters('sasToken'))]",
+            "contentVersion":"1.0.0.0"
+          },
+          "parameters": {
+            "vnetParameters":{"value": "[parameters('vnetParameters')]"}
+          }
+        }
+      }
+    ],
+    "outputs": {
+    }
+  }
